@@ -6,12 +6,16 @@ import { emptyDir } from "https://deno.land/std/fs/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
 import { download } from "./download.ts";
 
-(async () => {
-  // Url from which to download krita nightly
-  const url = "https://binary-factory.kde.org/job/Krita_Nightly_Windows_Build/";
+export interface Config {
+  url: string,
+  dir: string,
+  innerHTML: string
+}
 
+export const run = async (config: Config) => {
+  // Url from which to download krita nightly
   // Get the content of the page
-  const html = await (await fetch(url)).text();
+  const html = await (await fetch(config.url)).text();
 
   // Generate virtual dom from html
   const doc = new DOMParser().parseFromString(html, "text/html");
@@ -27,7 +31,7 @@ import { download } from "./download.ts";
   // Try to get the `windows...setup.exe` file
   let fileURLLastHalf;
   for (let i = 0; i < links.length; i++) {
-    if (links[i].textContent.toString().includes("setup.exe")) {
+    if (links[i].textContent.toString().includes(config.innerHTML)) {
       console.log("downloading: ", (links[i] as Element).attributes.href);
       fileURLLastHalf = (links[i] as Element).attributes.href;
     }
@@ -44,20 +48,20 @@ import { download } from "./download.ts";
 
   // Empties downloads folder, creates emtpy folder if needed
   // Love javascript where the std just writes your entire program for you
-  await emptyDir("./downloads");
+  await emptyDir(`./${config.dir}`);
 
   // Try downloading it to downloads folder
   try {
     await download(
-      url + fileURLLastHalf,
-      { dir: path.join(".", "downloads", filename) },
+      config.url + fileURLLastHalf,
+      { dir: path.join(".", config.dir, filename) },
     );
     // Then open the window up
     const process = Deno.run({
-      cmd: ["explorer", path.join(".", "downloads")],
+      cmd: ["explorer", path.join(".", config.dir)],
     });
     await process.status();
   } catch (err) {
     console.log(err);
   }
-})();
+};
