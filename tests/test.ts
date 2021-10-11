@@ -23,8 +23,8 @@ Deno.test("download sample file (from local)", async () => {
     // run the program with our custom config
     await run(config);
 
+    worker.terminate();
+
     // verify that the folder exists
     assert(exists('./test/test.html'));
-
-    worker.terminate();
 });
