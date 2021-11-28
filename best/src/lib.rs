@@ -63,6 +63,8 @@ pub fn gen_config(args: &JsValue) -> Result<JsValue, JsValue> {
             // Also, currently --mode needs to be set before --dry-run, for no apparent reason. I'm starting to hate cli apps more and more, because at some point once you start to pass more than 1 or 2 options to the app it becomes extremely unintuitive and buggy (think of ffmpeg or yt-dlp options)
             // I've spent 1 hour on little inconsistencies and it's really taxing
             // Maybe it's just because of the wasm environment, or maybe I didn't read the docs closely enough
+            // TODO It's this config makes me do -- --dry-run instead of --dry-run, don't know why. another -4 minutes.
+            // Kind of just want to do tauri apps instead ngl
             Arg::new("mode")
                 .about("what version of krita to download")
                 // .takes_value(true)
