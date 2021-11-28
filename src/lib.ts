@@ -1,3 +1,4 @@
+// deno-lint-ignore-file camelcase
 import {
   DOMParser,
   Element,
@@ -9,7 +10,8 @@ import { download } from "./download.ts";
 export interface Config {
   url: string,
   dir: string,
-  innerHTML: string
+  inner_html: string
+  dry_run: boolean
 }
 
 export const run = async (config: Config) => {
@@ -29,31 +31,42 @@ export const run = async (config: Config) => {
   const links = doc.querySelectorAll("a");
 
   // Try to get the `windows...setup.exe` file
-  let fileURLLastHalf;
+  let fileURL;
   for (let i = 0; i < links.length; i++) {
-    if (links[i].textContent.toString().includes(config.innerHTML)) {
-      fileURLLastHalf = (links[i] as Element).attributes.href;
-      console.log("downloading from link: ", fileURLLastHalf);
+    // If the text includes `...setup.exe`
+    if (links[i].textContent.toString().includes(config.inner_html)) {
+      // Get the file url from the href of the text
+      fileURL = (links[i] as Element).attributes.href;
+      console.log("found file link: ", fileURL);
     }
   }
 
   // If failed, leave
-  if (!fileURLLastHalf) {
+  if (!fileURL) {
     console.log('selector selected invalid link');
     return;
   }
 
-  const filename = fileURLLastHalf.substring(
-    fileURLLastHalf.lastIndexOf("/") + 1,
+  // If we found the link, try to parse the name of the file from the link (e.g. `krita-ver-68.exe`)
+  const filename = fileURL.substring(
+    fileURL.lastIndexOf("/") + 1,
   );
 
   // if file name is empty quit problem
   if (filename.length == 0) {
-    console.log(`couldn't decide on filename based on selected url ${fileURLLastHalf}`);
+    console.log(`couldn't decide on filename based on selected url ${fileURL}`);
     return;
   }
 
-  console.log(`downloading '${fileURLLastHalf}' to '${filename}'`);
+  if (config.dry_run) {
+    console.log(`version is ${filename}`)
+  } else {
+    console.log(`downloading '${fileURL}' to '${filename}'`);
+    await download_file(config, fileURL, filename);
+  }
+};
+
+const download_file = async (config: Config, fileURL: string, filename: string) => {
 
   // Empties downloads folder, creates emtpy folder if needed
   // Love javascript where the std just writes your entire program for you
@@ -62,13 +75,13 @@ export const run = async (config: Config) => {
   // Try downloading it to downloads folder
   try {
     await download(
-      config.url + fileURLLastHalf,
+      config.url + fileURL,
       { dir: path.join(".", config.dir, filename) },
     );
   } catch (err) {
     console.log(err);
   }
-};
+}
 
 export const preview = async (dir: string) => {
   // Then open the window up

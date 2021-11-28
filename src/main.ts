@@ -1,32 +1,27 @@
+import { dirname, fromFileUrl, resolve } from "https://deno.land/std/path/mod.ts";
 import { Config, run, preview } from "./lib.ts";
 
+import init, { greet, gen_config } from "../best/pkg/best.js";
+
+await init(Deno.readFile(resolve(dirname(fromFileUrl(import.meta.url)), "..", 'best', 'pkg', 'best_bg.wasm')));
+
 (async () => {
-    if (Deno.args.length != 1) {
-        console.log('usage: deno run [plus|next]');
-        return;
+    const string = greet();
+    console.log(string);
+
+    console.log('ok sending deno args over', Deno.args);
+    try {
+        const config: Config = gen_config(Deno.args);
+        console.log('running with config', config);
+
+        console.log('is this a dry run', config.dry_run);
+        await run(config);
+        // preview the file in windows explorer, if we're not just checking the version
+        if (!config.dry_run) {
+            await preview(config.dir);
+        }
+    } catch (e) {
+        console.log(e);
     }
 
-    let url = '';
-    switch (Deno.args[0]) {
-        case ('plus'):
-            url = 'https://binary-factory.kde.org/job/Krita_Stable_Windows_Build/'
-            break;
-        case ('next'):
-            url = 'https://binary-factory.kde.org/job/Krita_Nightly_Windows_Build/'
-            break;
-        default:
-            console.log('usage: deno run [plus|next]')
-            return
-    }
-
-    const config: Config = {
-        url: url,
-        dir: "downloads",
-        innerHTML: "setup.exe"
-    };
-    console.log('set config');
-    // download the file via webscraping
-    await run(config);
-    // preview the file in windows explorer
-    await preview(config.dir);
 })();
